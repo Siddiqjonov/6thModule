@@ -10,6 +10,7 @@ public class Program
         var paymentAmount = int.Parse(Console.ReadLine());
 
         var paymentStrategy = PaymentFactory.GetObject(appName);
+        paymentStrategy.Pay(paymentAmount);
         var execute = new PaymentStrategyExecuter(paymentStrategy);
         execute.Payment(paymentAmount);
 

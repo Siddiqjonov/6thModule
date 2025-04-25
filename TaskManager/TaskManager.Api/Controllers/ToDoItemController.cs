@@ -21,17 +21,11 @@ public class ToDoItemController : ControllerBase
     }
 
     [HttpPost("add")]
-    public async Task<IActionResult> AddToDoItem(ToDoItemCreateDto toDoItemCreateDto)
+    public async Task AddToDoItem(ToDoItemCreateDto toDoItemCreateDto)
     {
-        try
-        {
-            await ToDoItemService.AddToDoItemAsync(toDoItemCreateDto);
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = $"Server error: {ex.Message}" });
-        }
+        _logger.LogInformation("new to do item added");
+        await ToDoItemService.AddToDoItemAsync(toDoItemCreateDto);
+
     }
 
     [HttpGet("getAll")]
@@ -41,7 +35,8 @@ public class ToDoItemController : ControllerBase
 
         try
         {
-            throw new Exception("THIS IS A TEST ERROR FOR LOGGING IT DO DB AND FILE");
+            int a = 0;
+            int b = 3 / a;
         }
         catch (Exception ex)
         {
