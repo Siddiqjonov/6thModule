@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections;
+using TaskManager.Api.Filters;
 using TaskManager.Bll.Dtos;
 using TaskManager.Bll.Services;
 using TaskManager.Dal.Entities;
@@ -8,6 +9,7 @@ using TaskManager.Dal.Entities;
 namespace TaskManager.Api.Controllers;
 
 [Route("api/toDoItem")]
+[ServiceFilter(typeof(LogActionFilter))]
 [ApiController]
 public class ToDoItemController : ControllerBase
 {

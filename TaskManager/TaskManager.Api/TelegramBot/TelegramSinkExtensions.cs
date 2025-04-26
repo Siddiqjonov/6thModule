@@ -1,7 +1,7 @@
 ﻿using Serilog;
 using Serilog.Configuration;
 
-namespace TaskManager.Api.Sinks;
+namespace TaskManager.Api.TelegramBot;
 
 public static class TelegramSinkExtensions
 {

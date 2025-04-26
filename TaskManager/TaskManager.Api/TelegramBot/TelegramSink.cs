@@ -1,7 +1,7 @@
 ﻿using Serilog.Core;
 using Serilog.Events;
 
-namespace TaskManager.Api.Sinks;
+namespace TaskManager.Api.TelegramBot;
 
 public class TelegramSink : ILogEventSink
 {
