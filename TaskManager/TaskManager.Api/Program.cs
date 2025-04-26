@@ -1,5 +1,6 @@
 using TaskManager.Api.Configurations;
 using TaskManager.Api.Filters;
+using TaskManager.Api.Middleware;
 
 namespace TaskManager.Api
 {
@@ -36,6 +37,9 @@ namespace TaskManager.Api
             builder.RegisterServices();
 
             var app = builder.Build();
+
+            //app.UseMiddleware<RequestDurationMiddleware>();
+            //app.UseMiddleware<NightBlockMiddleware>();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
