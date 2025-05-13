@@ -50,7 +50,7 @@ public class ToDoItemService : IToDoItemService
             Title = doItemCreateDto.Title,
             Description = doItemCreateDto.Description,
             IsCompleted = false,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.Now,
             DueDate = doItemCreateDto.DueDate,
         };
     }

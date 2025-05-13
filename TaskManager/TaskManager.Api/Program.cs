@@ -13,10 +13,12 @@ namespace TaskManager.Api
             // Add services to the container.
             builder.ConfigureSerilog();
 
-            builder.Services.AddControllers(options =>
-            {
-                options.Filters.Add<GlobalExeptionFilter>();
-            });
+            //builder.Services.AddControllers(options =>
+            //{
+            //    options.Filters.Add<GlobalExeptionFilter>();
+            //});
+
+            builder.Services.AddControllers();
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();

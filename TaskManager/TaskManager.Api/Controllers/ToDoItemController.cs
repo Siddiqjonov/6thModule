@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections;
 using TaskManager.Api.Filters;
@@ -8,8 +9,9 @@ using TaskManager.Dal.Entities;
 
 namespace TaskManager.Api.Controllers;
 
+[EnableCors("AllowAll")]
 [Route("api/toDoItem")]
-[ServiceFilter(typeof(LogActionFilter))]
+//[ServiceFilter(typeof(LogActionFilter))]
 [ApiController]
 public class ToDoItemController : ControllerBase
 {
@@ -31,7 +33,7 @@ public class ToDoItemController : ControllerBase
     }
 
     [HttpGet("getAll")]
-    public async Task<ICollection<ToDoItemExtendedDto>> GetAll(int skip, int take)
+    public async Task<ICollection<ToDoItemExtendedDto>> GetAll(int skip, int take = 10)
     {
         _logger.LogInformation($"GetAll method has been used {DateTime.UtcNow}");
 
@@ -82,4 +84,27 @@ public class ToDoItemController : ControllerBase
     {
         return await ToDoItemService.GetToDoItemsByDueDateAsync(dueDate);
     }
+
+    [HttpPost("send")]
+    public async Task<IActionResult> SendSms(string number)
+    {
+        string url = @$"http://192.168.16.62:9090/sms/send?phoneNumber={number}";
+
+        using HttpClient httpClient = new HttpClient();
+
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, url);
+
+        HttpResponseMessage response = await httpClient.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return Ok("SMS sent successfully.");
+        }
+        else
+        {
+            return StatusCode((int)response.StatusCode, "Failed to send SMS.");
+        }
+    }
+
+
 }

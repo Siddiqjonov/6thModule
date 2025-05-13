@@ -16,7 +16,7 @@ public static class SelilogConfiguration
             .WriteTo.Telegram(telegramBotToken, telegramChatId) // ← Add this directly
             .CreateLogger();
 
-        builder.Logging.ClearProviders();
+        //builder.Logging.ClearProviders();
         builder.Logging.AddSerilog();
     }
 
