@@ -6,7 +6,7 @@ using ToDoList.Bll.Services;
 
 namespace ToDoList.Server.Controller;
 
-//[Authorize]
+[Authorize]
 [Route("api/toDoList")]
 [ApiController]
 public class ToDoListController : ControllerBase
@@ -21,9 +21,10 @@ public class ToDoListController : ControllerBase
     }
 
     [HttpPost("add")]
-    public async Task<long> AddToDoItem(ToDoItemCreateDto toDoItemCreateDto, long userId)
+    public async Task<long> AddToDoItem(ToDoItemCreateDto toDoItemCreateDto)
     {
         _logger.LogInformation("AddToDoItem method worked");
+        var userId = long.Parse(User.FindFirst("UserId")?.Value!);
 
         var id = await _toDoItemService.AddToDoItemAsync(toDoItemCreateDto, userId);
         return id;
@@ -47,7 +48,7 @@ public class ToDoListController : ControllerBase
     [HttpGet("getAll")]
     public async Task<GetAllResponseModel> GetAllToDoItemsAsync(int skip, int take)
     {
-        var userId = long.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("UserId")?.Value);
+        var userId = long.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("UserId")?.Value!);
 
         _logger.LogInformation($"GetAllToDoItemsAsync method worked");
 

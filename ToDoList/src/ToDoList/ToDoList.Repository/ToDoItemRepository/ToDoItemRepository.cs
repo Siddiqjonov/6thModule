@@ -25,7 +25,7 @@ public class ToDoItemRepository : IToDoItemRepository
         throw new NotImplementedException();
     }
 
-    public async Task<long> InsertToDoItemAsync(ToDoItem toDoItem, long userId)
+    public async Task<long> InsertToDoItemAsync(ToDoItem toDoItem)
     {
         await MainContext.ToDoItems.AddAsync(toDoItem);
         await MainContext.SaveChangesAsync();

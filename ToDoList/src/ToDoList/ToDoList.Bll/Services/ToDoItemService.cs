@@ -34,9 +34,10 @@ namespace ToDoList.Bll.Services
             }
 
             ArgumentNullException.ThrowIfNull(toDoItem);
-            var covert = _mapper.Map<ToDoItem>(toDoItem);
+            var convert = _mapper.Map<ToDoItem>(toDoItem);
+            convert.UserId = userId;
 
-            var id = await _toDoItemRepository.InsertToDoItemAsync(covert, userId);
+            var id = await _toDoItemRepository.InsertToDoItemAsync(convert);
             return id;
         }
 

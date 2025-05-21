@@ -38,9 +38,25 @@ public class ApiExceptionFilterAttribute : ExceptionFilterAttribute
 
         actionExecutedContext.HttpContext.Response.StatusCode = code;
 
+        //actionExecutedContext.Result = new JsonResult(new
+        //{
+        //    error = actionExecutedContext.Exception.Message
+        //});
+
+        //actionExecutedContext.Result = new JsonResult(new
+        //{
+        //    error = actionExecutedContext.Exception.Message,
+        //    innerError = actionExecutedContext.Exception.InnerException?.Message
+        //});
+
+
         actionExecutedContext.Result = new JsonResult(new
         {
-            error = actionExecutedContext.Exception.Message
+            error = actionExecutedContext.Exception.Message,
+            innerError = actionExecutedContext.Exception.InnerException != null
+                 ? actionExecutedContext.Exception.InnerException.Message
+                 : null
         });
+
     }
 }

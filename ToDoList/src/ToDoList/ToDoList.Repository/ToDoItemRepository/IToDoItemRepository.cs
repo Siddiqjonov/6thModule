@@ -4,7 +4,7 @@ namespace ToDoList.Repository.ToDoItemRepository;
 
 public interface IToDoItemRepository
 {
-    Task<long> InsertToDoItemAsync(ToDoItem toDoItem, long userId);
+    Task<long> InsertToDoItemAsync(ToDoItem toDoItem);
     Task DeleteToDoItemByIdAsync(long id);
     Task UpdateToDoItemAsync(ToDoItem toDoItem);
     Task<ICollection<ToDoItem>> SelectAllToDoItemsAsync(long userId, int skip, int take);
