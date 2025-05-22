@@ -1,19 +1,19 @@
 ﻿using ContactMate.Bll.Dtos;
 using ContactMate.Bll.FluentValidations;
 using ContactMate.Core.Errors;
+using ContactMate.Dal;
 using ContactMate.Dal.Entities;
-using ContactMate.Repository.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace ContactMate.Bll.Services;
 
 public class ContactService : IContactService
 {
-    private readonly IContactRepository ContactRepository;
+    private readonly MainContext MainContext;
 
-    public ContactService(IContactRepository contactRepository)
+    public ContactService(MainContext mainContext)
     {
-        ContactRepository = contactRepository;
+        MainContext = mainContext;
     }
 
     public async Task<long> AddContactAsync(ContactCreateDto contactCreateDto, long userId)
@@ -43,22 +43,22 @@ public class ContactService : IContactService
             UserId = userId,
         };
 
-        var contactId = await ContactRepository.InsertContactAsync(contact);
+        var contactId = await InsertContactAsync(contact);
         return contactId;
     }
 
     public async Task DeleteContactAsync(long contactId, long userId)
     {
-        var contactOfUser = await ContactRepository.
-            SelectAllContacts().FirstOrDefaultAsync(c => c.Id == contactId && c.UserId == userId);
+        var contactOfUser = await SelectAllContacts()
+            .FirstOrDefaultAsync(c => c.Id == contactId && c.UserId == userId);
         if (contactOfUser is null)
             throw new EntityNotFoundException($"Contact with contactId: {contactId} and userId: {userId} not found to delete");
-        await ContactRepository.DeleteContactAsync(contactOfUser);
+        await DeleteContactAsync(contactOfUser);
     }
 
     public async Task<ICollection<ContactDto>> GetAllContactstAsync(long userId)
     {
-        var contacts = await ContactRepository.SelectAllUserContactsAsync(userId);
+        var contacts = await SelectAllUserContactsAsync(userId);
 
         var contactsDto = contacts.Select(contact => ConvertToContactDto(contact));
         return contactsDto.ToList();
@@ -79,7 +79,7 @@ public class ContactService : IContactService
 
     public async Task<ContactDto> GetContactByContacIdAsync(long contactId, long userId)
     {
-        var contact = await ContactRepository.SelectContactByContactIdAsync(contactId);
+        var contact = await SelectContactByContactIdAsync(contactId);
         var contactDto = ConvertToContactDto(contact);
         if (contact.User.UserId == userId)
             return contactDto;
@@ -102,8 +102,8 @@ public class ContactService : IContactService
             throw new ValidationFailedException(errors);
         }
 
-        var contactOfUser = await ContactRepository.
-            SelectAllContacts().FirstOrDefaultAsync(c => c.Id == contactDto.ContactId && c.UserId == userId);
+        var contactOfUser = await SelectAllContacts()
+            .FirstOrDefaultAsync(c => c.Id == contactDto.ContactId && c.UserId == userId);
         if (contactOfUser is null)
             throw new EntityNotFoundException($"Contact with contactId: {contactDto.ContactId} and userId: {userId} not found to update");
 
@@ -118,6 +118,47 @@ public class ContactService : IContactService
             UserId = userId,
         };
 
-        await ContactRepository.UpdateContactAsync(contact);
+        await UpdateContactAsync(contact);
+    }
+
+
+    //----------------------------------------------------
+
+
+    private async Task DeleteContactAsync(Contact contact)
+    {
+        MainContext.Contacts.Remove(contact);
+        await MainContext.SaveChangesAsync();
+    }
+
+    private async Task<long> InsertContactAsync(Contact contact)
+    {
+        await MainContext.Contacts.AddAsync(contact);
+        await MainContext.SaveChangesAsync();
+        return contact.Id;
+    }
+
+    private IQueryable<Contact> SelectAllContacts()
+    {
+        return MainContext.Contacts;
+    }
+
+    private async Task<ICollection<Contact>> SelectAllUserContactsAsync(long userId)
+    {
+        var contacts = await MainContext.Contacts.Where(c => c.UserId == userId).ToListAsync();
+        return contacts;
+    }
+
+    private async Task<Contact> SelectContactByContactIdAsync(long contactId)
+    {
+        var contact = await MainContext.Contacts.Include(c => c.User).FirstOrDefaultAsync(c => c.Id == contactId);
+        return contact == null ? throw new EntityNotFoundException($"Contact wiht contactId {contactId} not found") : contact;
+    }
+
+    private async Task UpdateContactAsync(Contact contact)
+    {
+        var contactFronDb = await SelectContactByContactIdAsync(contact.Id);
+        MainContext.Contacts.Update(contactFronDb);
+        await MainContext.SaveChangesAsync();
     }
 }

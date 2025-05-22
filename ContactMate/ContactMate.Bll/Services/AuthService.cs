@@ -5,30 +5,19 @@ using ContactMate.Bll.Helpers.Security;
 using ContactMate.Core.Errors;
 using ContactMate.Dal;
 using ContactMate.Dal.Entities;
-using ContactMate.Repository.Services;
 using Microsoft.EntityFrameworkCore;
-using System.Net;
 
 namespace ContactMate.Bll.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly IUserRepositroy UserRepositroy;
     private readonly ITokenService TokenService;
-    private readonly IRefreshTokenRepository RefreshTokenRepository;
-    private readonly IUserRoleRepository UserRoleRepository;
     private readonly MainContext MainContext;
 
-    public AuthService(IUserRepositroy userRepositroy,
-        ITokenService tokenService,
-        IRefreshTokenRepository refreshTokenRepository,
-        IUserRoleRepository userRoleRepository,
+    public AuthService(ITokenService tokenService,
         MainContext mainContext)
     {
-        UserRepositroy = userRepositroy;
         TokenService = tokenService;
-        RefreshTokenRepository = refreshTokenRepository;
-        UserRoleRepository = userRoleRepository;
         MainContext = mainContext;
     }
 
@@ -47,7 +36,7 @@ public class AuthService : IAuthService
             throw new ValidationFailedException(errors);
         }
 
-        var user = await UserRepositroy.SelectUserByUserNameAsync(userLogInDto.UserName);
+        var user = await SelectUserByUserNameAsync(userLogInDto.UserName);
 
         var checkUserPassword = PasswordHasher.Verify(userLogInDto.Password, user.Password, user.Salt);
         if (checkUserPassword == false)
@@ -67,7 +56,7 @@ public class AuthService : IAuthService
         };
 
         var token = TokenService.GenerateTokent(userGetDto);
-        var existingToken = await RefreshTokenRepository.SelectActiveTokenByUserIdAsync(user.UserId);
+        var existingToken = await SelectActiveTokenByUserIdAsync(user.UserId);
 
         var loginResponseDto = new LogInResponseDto()
         {
@@ -87,7 +76,7 @@ public class AuthService : IAuthService
                 UserId = user.UserId,
             };
 
-            await RefreshTokenRepository.InsertRefreshTokenAsync(refreshTokenToDB);
+            await InsertRefreshTokenAsync(refreshTokenToDB);
 
             loginResponseDto.RefreshToken = refreshToken;
         }
@@ -101,7 +90,7 @@ public class AuthService : IAuthService
 
     public async Task LogOutAsync(string token)
     {
-        await RefreshTokenRepository.RemoveRefreshTokenAsync(token);
+        await RemoveRefreshTokenAsync(token);
     }
 
     public async Task<LogInResponseDto> RefreshTokenAsync(RefreshRequestDto request)
@@ -112,14 +101,14 @@ public class AuthService : IAuthService
         var userClaim = principal.FindFirst(c => c.Type == "UserId");
         var userId = long.Parse(userClaim.Value);
 
-        var refreshToken = await RefreshTokenRepository.SelectRefreshTokenAsync(request.RefreshToken, userId);
+        var refreshToken = await SelectRefreshTokenAsync(request.RefreshToken, userId);
         if (refreshToken == null || refreshToken.Expires < DateTime.UtcNow || refreshToken.IsRevoked)
             throw new UnauthorizedAccessException("Invalid or expired refresh token");
 
         // make refresh token used
         refreshToken.IsRevoked = true;
 
-        var user = await UserRepositroy.SelectUserByIdAsync(userId);
+        var user = await SelectUserByIdAsync(userId);
 
         var userGetDto = new UserGetDto()
         {
@@ -144,7 +133,7 @@ public class AuthService : IAuthService
             UserId = user.UserId,
         };
 
-        await RefreshTokenRepository.InsertRefreshTokenAsync(refreshTokenToDB);
+        await InsertRefreshTokenAsync(refreshTokenToDB);
 
         return new LogInResponseDto()
         {
@@ -159,7 +148,7 @@ public class AuthService : IAuthService
     {
         var userValidator = new UserCreateDtoValidator();
         var result = userValidator.Validate(userCreateDto);
-        
+
 
         if (!result.IsValid)
         {
@@ -174,9 +163,7 @@ public class AuthService : IAuthService
         var tupleFromHasher = PasswordHasher.Hasher(userCreateDto.Password);
 
         var userRoleName = "User";
-        var userRoleOfUser = await MainContext.UserRoles.FirstOrDefaultAsync(uR => uR.UserRoleName == userRoleName);
-        if (userRoleOfUser == null) 
-            throw new EntityNotFoundException($"Role with role name: {userRoleName} not found");
+        var userRoleOfUser = await SelectUserRoleByRoleName(userRoleName);
 
         var user = new User()
         {
@@ -190,6 +177,73 @@ public class AuthService : IAuthService
             UserRoleId = userRoleOfUser.UserRoleId,
         };
 
-        return await UserRepositroy.InsertUserAsync(user);
+        return await InsertUserAsync(user);
     }
+
+    private async Task<UserRole> SelectUserRoleByRoleName(string userRoleName)
+    {
+        var userRole = await MainContext.UserRoles.FirstOrDefaultAsync(uR => uR.UserRoleName == userRoleName);
+        return userRole == null ? throw new EntityNotFoundException($"Role with role name: {userRoleName} not found") : userRole;
+    }
+
+    //-------------------------------------------------------------
+
+
+    private async Task InsertRefreshTokenAsync(RefreshToken refreshToken)
+    {
+        await MainContext.RefreshTokens.AddAsync(refreshToken);
+        await MainContext.SaveChangesAsync();
+    }
+
+    private async Task<RefreshToken?> SelectActiveTokenByUserIdAsync(long userId)
+    {
+        RefreshToken? refreshToke;
+        try
+        {
+            refreshToke = await MainContext.RefreshTokens
+            .Include(rf => rf.User)
+            .SingleOrDefaultAsync(rf => rf.UserId == userId && rf.IsRevoked == false && rf.Expires > DateTime.UtcNow);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new DuplicateEntryException($"2 or more active refreshToken found with userId: {userId} found!\nAnd {ex.Message}");
+        }
+        return refreshToke;
+    }
+
+    private async Task<RefreshToken> SelectRefreshTokenAsync(string refreshToken, long userId)
+    {
+        var refToken = await MainContext.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshToken && rt.UserId == userId);
+        return refToken ?? throw new InvalidArgumentException($"RefreshToken with {userId} is invalid");
+    }
+    private async Task RemoveRefreshTokenAsync(string token)
+    {
+        var refreshToken = await MainContext.RefreshTokens.FirstOrDefaultAsync(rf => rf.Token == token);
+        if (refreshToken == null) throw new EntityNotFoundException($"Refresh token: {refreshToken} not found");
+
+        MainContext.RefreshTokens.Remove(refreshToken);
+        await MainContext.SaveChangesAsync();
+    }
+
+    //--------------------------------------------------------------
+
+
+    private async Task<long> InsertUserAsync(User user)
+    {
+        await MainContext.Users.AddAsync(user);
+        await MainContext.SaveChangesAsync();
+        return user.UserId;
+    }
+
+    private async Task<User> SelectUserByUserNameAsync(string userName)
+    {
+        var user = await MainContext.Users.Include(u => u.UserRole).FirstOrDefaultAsync(u => u.UserName == userName);
+        return user ?? throw new EntityNotFoundException($"User with {userName} not found");
+    }
+    private async Task<User> SelectUserByIdAsync(long userId)
+    {
+        var user = await MainContext.Users.Include(u => u.UserRole).FirstOrDefaultAsync(u => u.UserId == userId);
+        return user ?? throw new EntityNotFoundException($"User with userId {userId} not found");
+    }
+
 }

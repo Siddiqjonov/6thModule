@@ -1,6 +1,9 @@
-﻿using ContactMate.Bll.Services;
+﻿using ContactMate.Bll.Dtos;
+using ContactMate.Bll.Services;
+using ContactMate.Core.Errors;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Data;
 
 namespace ContactMate.Api.Endpoints;
 
@@ -8,9 +11,21 @@ public static class RoleEndpoints
 {
     public static void MapRoleEndpoints(this WebApplication app)
     {
-        var userGroup = app.MapGroup("/api/userRole")
+        var userGroup = app.MapGroup("/api/role")
             .RequireAuthorization()
             .WithTags("UserRole Management");
+
+        userGroup.MapPost("/post", [Authorize(Roles = "SuperAdmin")]
+        async (UserRoleCreateDto userRoleCreateDto, IUserRoleService _userRoleService, HttpContext context) =>
+        {
+            var userRoleName = context.User.FindFirst("Role")?.Value;
+            if (userRoleName == null)
+                throw new NotAllowedException("Access allowed to SuperAdmin!");
+            var userRoleId = await _userRoleService.AddUserRoleAsync(userRoleCreateDto, userRoleName);
+            return Results.Ok(userRoleId);
+        })
+        .WithName("AddUserRole");
+
 
         userGroup.MapGet("/getAll", [Authorize(Roles = "Admin, SuperAdmin")]
         async (IUserRoleService _userRoleService) =>
@@ -19,15 +34,5 @@ public static class RoleEndpoints
             return Results.Ok(roles);
         })
           .WithName("GetAllUsers");
-
-        userGroup.MapGet("/getAllUsersByRoleName",
-            [Authorize(Roles = "Admin, SuperAdmin")]
-            [ResponseCache(Duration = 5, Location = ResponseCacheLocation.Any, NoStore = false)]
-        async (string role, IUserRoleService _userRoleService) =>
-        {
-            var users = await _userRoleService.GetAllUsersByRoleNameAsync(role);
-            return Results.Ok(users);
-        })
-        .WithName("GetUsersByRole");
     }
 }

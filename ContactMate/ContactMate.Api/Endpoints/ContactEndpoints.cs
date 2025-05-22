@@ -11,22 +11,22 @@ public static class ContactEndpoints
     {
         var userGroup = app.MapGroup("/api/contact")
             .RequireAuthorization().
-            WithTags("Contact Managment");
+            WithTags("Contact endpoints");
 
-        userGroup.MapPost("/add", AddContact)
+        userGroup.MapPost("/post", AddContact)
             .WithName("AddContact");
 
         userGroup.MapDelete("/delete", DeleteContact)
             .WithName("DeleteContact");
 
-        userGroup.MapPut("/update", UpdateContact)
-            .WithName("UpdateContact");
+        userGroup.MapGet("/getAll", GetAllContacts)
+            .WithName("GetAllContacts");
 
         userGroup.MapGet("/getById", GetContactById)
             .WithName("GetContactById");
 
-        userGroup.MapGet("/getAll", GetAllContacts)
-            .WithName("GetAllContacts");
+        userGroup.MapPut("/update", UpdateContact)
+            .WithName("UpdateContact");
     }
 
     public static async Task<IResult> AddContact(ContactCreateDto contactCreateDto, HttpContext context, IContactService contactService)

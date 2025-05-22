@@ -1,6 +1,7 @@
 
 using ContactMate.Api.Configurations;
 using ContactMate.Api.Endpoints;
+using ContactMate.Api.Middlewares;
 
 namespace ContactMate.Api
 {
@@ -17,9 +18,20 @@ namespace ContactMate.Api
             builder.ConfigurationJwtAuth();
 
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddMemoryCache();
+            builder.Services.AddResponseCaching();
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", policy =>
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader();
+                });
+            });
 
             var app = builder.Build();
 
@@ -30,14 +42,22 @@ namespace ContactMate.Api
                 app.UseSwaggerUI();
             }
 
+            app.UseMiddleware<NightBlockMiddleware>();
+            app.UseMiddleware<GlobalExceptionMiddleware>();
+
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
+            app.UseAuthentication();
 
-            app.MapAuthEndpoints();
-
+            app.UseCors("AllowAll");
 
             app.MapControllers();
+
+            app.MapAuthEndpoints();
+            app.MapAdminEndpoints();
+            app.MapContactEndpoints();
+            app.MapRoleEndpoints();
 
             app.Run();
         }

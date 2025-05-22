@@ -6,4 +6,5 @@ public interface IUserRoleService
 {
     Task<ICollection<UserRoleDto>> GetAllRolesAsync();
     Task<ICollection<UserGetDto>> GetAllUsersByRoleNameAsync(string roleName);
+    Task<long> AddUserRoleAsync(UserRoleCreateDto userRoleCreateDto, string userRoleName);
 }

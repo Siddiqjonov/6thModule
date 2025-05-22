@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ContactMate.Repository\ContactMate.Repository.csproj" />
+    <ProjectReference Include="..\ContactMate.Core\ContactMate.Core.csproj" />
+    <ProjectReference Include="..\ContactMate.Dal\ContactMate.Dal.csproj" />
   </ItemGroup>
 
   <ItemGroup>

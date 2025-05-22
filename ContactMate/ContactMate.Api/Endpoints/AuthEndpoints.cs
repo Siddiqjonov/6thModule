@@ -9,13 +9,13 @@ public static class AuthEndpoints
     public static void MapAuthEndpoints(this WebApplication app)
     {
         var userGroup = app.MapGroup("/api/auth")
-            .WithTags("Authentication");
-
-        userGroup.MapPost("/sighUp", SignUp)
-            .WithName("SignUp");
+            .WithTags("Auth endpoints");
 
         userGroup.MapPost("/signIn", SignIn)
             .WithName("LogIn");
+
+        userGroup.MapPost("/sighUp", SignUp)
+            .WithName("SignUp");
 
         userGroup.MapPost("/refreshToken", RefreshToken)
             .WithName("RefreshToken");

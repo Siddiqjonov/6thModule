@@ -1,29 +1,31 @@
 ﻿using ContactMate.Bll.Dtos;
+using ContactMate.Core.Errors;
+using ContactMate.Dal;
 using ContactMate.Dal.Entities;
-using ContactMate.Repository.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace ContactMate.Bll.Services;
 
 public class UserRoleService : IUserRoleService
 {
-    private readonly IUserRoleRepository UserRoleRepository;
+    private readonly MainContext MainContext;
 
-    public UserRoleService(IUserRoleRepository userRoleRepository)
+    public UserRoleService(MainContext mainContext)
     {
-        UserRoleRepository = userRoleRepository;
+        MainContext = mainContext;
     }
 
     public async Task<ICollection<UserRoleDto>> GetAllRolesAsync()
     {
-        var userRoels = await UserRoleRepository.SelectAllRolesAsync();
+        var userRoels = await SelectAllRolesAsync();
 
         var userRoleDto = userRoels.Select(userRole => ConverUserRoleToUserRoleDto(userRole)).ToList();
         return userRoleDto;
     }
 
-    public async Task<ICollection<UserGetDto>> GetAllUsersByRoleNameAsync(string roleName)    
+    public async Task<ICollection<UserGetDto>> GetAllUsersByRoleNameAsync(string roleName)
     {
-        var users = await UserRoleRepository.SelectAllUsersByRoleNameAsync(roleName);
+        var users = await SelectAllUsersByRoleNameAsync(roleName);
 
         var userRolesDto = users.Select(user => ConvertUserToUserGetDto(user)).ToList();
         return userRolesDto;
@@ -51,5 +53,40 @@ public class UserRoleService : IUserRoleService
             PhoneNumber = user.PhoneNumber,
             Role = user.UserRole.UserRoleName,
         };
+    }
+
+    public async Task<long> AddUserRoleAsync(UserRoleCreateDto userRoleCreateDto, string userRoleName)
+    {
+        if (userRoleName != "SuperAdmin")
+            throw new NotAllowedException("Access only allowed to SuperAdmin to add user roles");
+
+        var userRole = new UserRole()
+        {
+            UserRoleName = userRoleCreateDto.UserRoleName,
+            Description = userRoleCreateDto.Description,
+        };
+
+        var userRoleId = await InsertUserRoleAsync(userRole);
+
+        return userRoleId;
+    }
+
+    private async Task<long> InsertUserRoleAsync(UserRole userRole)
+    {
+        await MainContext.UserRoles.AddAsync(userRole);
+        await MainContext.SaveChangesAsync();
+        return userRole.UserRoleId;
+    }
+
+    private async Task<ICollection<UserRole>> SelectAllRolesAsync()
+    {
+        var userRoles = await MainContext.UserRoles.ToListAsync();
+        return userRoles;
+    }
+
+    private async Task<ICollection<User>> SelectAllUsersByRoleNameAsync(string roleName)
+    {
+        var users = await MainContext.Users.Include(u => u.UserRole).Where(u => u.UserRole.UserRoleName == roleName).ToListAsync();
+        return users;
     }
 }

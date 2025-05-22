@@ -1,35 +1,32 @@
 ﻿using ContactMate.Core.Errors;
-using ContactMate.Repository.Services;
+using ContactMate.Dal;
+using ContactMate.Dal.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace ContactMate.Bll.Services;
 
 public class UserService : IUserService
 {
-    private readonly IUserRepositroy UserRepositroy;
-    private readonly IUserRoleRepository UserRoleRepository;
+    private readonly MainContext MainContext;
 
-    public UserService(IUserRepositroy userRepositroy, IUserRoleRepository userRoleRepository)
+    public UserService(MainContext mainContext)
     {
-        UserRepositroy = userRepositroy;
-        UserRoleRepository = userRoleRepository;
+        MainContext = mainContext;
     }
 
-    public async Task DeleteUserByIdAsync(long userId, string userRoleName)
+    public async Task DeleteUserByRoleAsync(long userId, string userRoleName)
     {
-        //var admin = await UserRoleRepository.SelectUserRoleByRoleName("Admin");
-        //var superAdmin = await UserRoleRepository.SelectUserRoleByRoleName("SuperAdmin");
-
         if (userRoleName == "SuperAdmin")
         {
-            await UserRepositroy.DeleteUserById(userId);
+            await DeleteUserById(userId);
         }
         else if (userRoleName == "Admin")
         {
-            var user = await UserRepositroy.SelectUserByIdAsync(userId);
+            var user = await SelectUserByIdAsync(userId);
 
             if (user.UserRole.UserRoleName == "User" && user.UserId == userId)
             {
-                await UserRepositroy.DeleteUserById(userId);
+                await DeleteUserById(userId);
             }
             else
             {
@@ -41,7 +38,30 @@ public class UserService : IUserService
     public async Task UpdateUserRoleAsync(long userId, string userRoleName)
     {
         await (userRoleName == "SuperAdmin"
-            ? UserRepositroy.UpdateUserRoleAsync(userId, userRoleName)
+            ? PatchUserRoleAsync(userId, userRoleName)
             : throw new NotAllowedException("Updating is not allowed for Users or Admin"));
+    }
+
+    // -----------------------------------------
+
+    private async Task DeleteUserById(long userId)
+    {
+        var user = await SelectUserByIdAsync(userId);
+        MainContext.Users.Remove(user);
+        await MainContext.SaveChangesAsync();
+    }
+
+    private async Task<User> SelectUserByIdAsync(long userId)
+    {
+        var user = await MainContext.Users.Include(u => u.UserRole).FirstOrDefaultAsync(u => u.UserId == userId);
+        return user ?? throw new EntityNotFoundException($"User with userId {userId} not found");
+    }
+
+    private async Task PatchUserRoleAsync(long userId, string UserRoleName)
+    {
+        var user = await SelectUserByIdAsync(userId);
+        user.UserRole.UserRoleName = UserRoleName;
+        MainContext.Users.Update(user);
+        await MainContext.SaveChangesAsync();
     }
 }
