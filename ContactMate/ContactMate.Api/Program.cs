@@ -1,5 +1,6 @@
 
 using ContactMate.Api.Configurations;
+using ContactMate.Api.Endpoints;
 
 namespace ContactMate.Api
 {
@@ -32,6 +33,8 @@ namespace ContactMate.Api
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
+
+            app.MapAuthEndpoints();
 
 
             app.MapControllers();

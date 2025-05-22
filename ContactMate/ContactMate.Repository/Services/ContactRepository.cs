@@ -46,7 +46,7 @@ public class ContactRepository : IContactRepository
 
     public async Task<Contact> SelectContactByContactIdAsync(long contactId)
     {
-        var contact = await MainContext.Contacts.FirstOrDefaultAsync(c => c.Id == contactId);
+        var contact = await MainContext.Contacts.Include(c => c.User).FirstOrDefaultAsync(c => c.Id == contactId);
         return contact == null ? throw new EntityNotFoundException($"Contact wiht contactId {contactId} not found") : contact;
     }
 

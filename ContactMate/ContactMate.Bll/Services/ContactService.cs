@@ -56,7 +56,7 @@ public class ContactService : IContactService
         await ContactRepository.DeleteContactAsync(contactOfUser);
     }
 
-    public async Task<ICollection<ContactDto>> GetAllContacstAsync(long userId)
+    public async Task<ICollection<ContactDto>> GetAllContactstAsync(long userId)
     {
         var contacts = await ContactRepository.SelectAllUserContactsAsync(userId);
 
@@ -77,11 +77,14 @@ public class ContactService : IContactService
         };
     }
 
-    public async Task<ContactDto> GetContacDtotByContacId(long contactId)
+    public async Task<ContactDto> GetContactByContacIdAsync(long contactId, long userId)
     {
         var contact = await ContactRepository.SelectContactByContactIdAsync(contactId);
         var contactDto = ConvertToContactDto(contact);
-        return contactDto;
+        if (contact.User.UserId == userId)
+            return contactDto;
+        else
+            throw new NotAllowedException($"Contact does not belong to user with userId: {userId}");
     }
 
     public async Task UpdateContactAsync(ContactDto contactDto, long userId)

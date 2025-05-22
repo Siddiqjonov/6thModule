@@ -30,7 +30,7 @@ public class GlobalExceptionMiddleware
 
             int code = ex switch
             {
-                ForbiddenException => 403,
+                ForbiddenException => 401,
                 InvalidArgumentException => 422,
                 NotFoundException or DirectoryNotFoundException or EntityNotFoundException => 404,
                 AuthException or UnauthorizedException => 401,
@@ -43,7 +43,7 @@ public class GlobalExceptionMiddleware
             context.Response.StatusCode = code;
             context.Response.ContentType = "application/json";
 
-            var response = new { error = ex.Message };
+            var response = new { error = ex.Message, detail = ex.InnerException };
             var json = JsonSerializer.Serialize(response);
             await context.Response.WriteAsync(json);
 

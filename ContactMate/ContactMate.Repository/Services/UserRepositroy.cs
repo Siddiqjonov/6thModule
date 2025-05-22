@@ -36,7 +36,7 @@ public class UserRepositroy : IUserRepositroy
 
     public async Task<User> SelectUserByUserNameAsync(string userName)
     {
-        var user = await MainContext.Users.FirstOrDefaultAsync(u => u.UserName == userName);
+        var user = await MainContext.Users.Include(u => u.UserRole).FirstOrDefaultAsync(u => u.UserName == userName);
         return user ?? throw new EntityNotFoundException($"User with {userName} not found");
     }
 

@@ -26,9 +26,9 @@ public class UserRoleRepository : IUserRoleRepository
         return users;
     }
 
-    public async Task<UserRole> SelectUserRoleByRoleName(string userRoleName)
-    {
-        var userRole = await MainContext.UserRoles.FirstOrDefaultAsync(uR => uR.UserRoleName == userRoleName);
-        return userRole == null ? throw new EntityNotFoundException($"Role with role name: {userRoleName} not found") : userRole;
-    }
+    //public async Task<UserRole> SelectUserRoleByRoleName(string userRoleName)
+    //{
+    //    var userRole = await MainContext.UserRoles.FirstOrDefaultAsync(uR => uR.UserRoleName == userRoleName);
+    //    return userRole == null ? throw new EntityNotFoundException($"Role with role name: {userRoleName} not found") : userRole;
+    //}
 }

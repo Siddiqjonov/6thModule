@@ -3,8 +3,10 @@ using ContactMate.Bll.FluentValidations;
 using ContactMate.Bll.Helpers;
 using ContactMate.Bll.Helpers.Security;
 using ContactMate.Core.Errors;
+using ContactMate.Dal;
 using ContactMate.Dal.Entities;
 using ContactMate.Repository.Services;
+using Microsoft.EntityFrameworkCore;
 using System.Net;
 
 namespace ContactMate.Bll.Services;
@@ -15,16 +17,19 @@ public class AuthService : IAuthService
     private readonly ITokenService TokenService;
     private readonly IRefreshTokenRepository RefreshTokenRepository;
     private readonly IUserRoleRepository UserRoleRepository;
+    private readonly MainContext MainContext;
 
     public AuthService(IUserRepositroy userRepositroy,
         ITokenService tokenService,
         IRefreshTokenRepository refreshTokenRepository,
-        IUserRoleRepository userRoleRepository)
+        IUserRoleRepository userRoleRepository,
+        MainContext mainContext)
     {
         UserRepositroy = userRepositroy;
         TokenService = tokenService;
         RefreshTokenRepository = refreshTokenRepository;
         UserRoleRepository = userRoleRepository;
+        MainContext = mainContext;
     }
 
     public async Task<LogInResponseDto> LoginUserAsync(UserLogInDto userLogInDto)
@@ -167,7 +172,12 @@ public class AuthService : IAuthService
         }
 
         var tupleFromHasher = PasswordHasher.Hasher(userCreateDto.Password);
-        var roleIdOfUserRole = UserRoleRepository.SelectUserRoleByRoleName("User").Id;
+
+        var userRoleName = "User";
+        var userRoleOfUser = await MainContext.UserRoles.FirstOrDefaultAsync(uR => uR.UserRoleName == userRoleName);
+        if (userRoleOfUser == null) 
+            throw new EntityNotFoundException($"Role with role name: {userRoleName} not found");
+
         var user = new User()
         {
             FirstName = userCreateDto.FirstName,
@@ -177,7 +187,7 @@ public class AuthService : IAuthService
             PhoneNumber = userCreateDto.PhoneNumber,
             Password = tupleFromHasher.Hash,
             Salt = tupleFromHasher.Salt,
-            UserId = roleIdOfUserRole,
+            UserRoleId = userRoleOfUser.UserRoleId,
         };
 
         return await UserRepositroy.InsertUserAsync(user);
